@@ -8,3 +8,6 @@ class Log():
     def outputLog(self):
         for line in self.logRecords:
             print(line)
+
+    def emptyLog(self):
+        self.logRecords = []

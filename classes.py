@@ -26,12 +26,12 @@ class TruckClass():
         self.queueWaitTime = 0
     
     def getQueueSize(self, queueList):
-        return len(queueList) + 1
+        return len(queueList)
 
     def enterQueue(self, truckDictKey, queueList):
 
-        self.pos = self.getQueueSize(queueList)
         queueList.append(truckDictKey)
+        self.pos = self.getQueueSize(queueList)
         #self.queueWaitTime = self.getQueueWaitTime(queueList, hydraulicsList)
     
     # def getQueueWaitTime(self, queueList, trucksDict, hydraulicsList):
