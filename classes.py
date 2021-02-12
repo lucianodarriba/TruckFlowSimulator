@@ -20,29 +20,23 @@ class HydraulicsClass():
 
 class TruckClass():
     def __init__(self, id, grainType):
+        from simulation import STATUS_AVAILABLE
         self.id = id
         self.type = grainType
         self.pos = -1
         self.queueWaitTime = 0
+        self.status = STATUS_AVAILABLE
     
     def getQueueSize(self, queueList):
         return len(queueList)
 
     def enterQueue(self, truckDictKey, queueList):
+        from simulation import STATUS_AVAILABLE, STATUS_ONQUEUE
 
-        queueList.append(truckDictKey)
-        self.pos = self.getQueueSize(queueList)
-        #self.queueWaitTime = self.getQueueWaitTime(queueList, hydraulicsList)
-    
-    # def getQueueWaitTime(self, queueList, trucksDict, hydraulicsList):
-    #     truckIndex = queueList.index(self.id)
-
-    #     if truckIndex < 0:
-    #         print("Error: Truck with ID " + self.id + " is not in queue.")
-    #         return
-    #     elif truckIndex == 0:
-    #         self.queueWaitTime = min(list(hydraulic.remainingTime for hydraulic in hydraulicsList if hydraulic.grainType == self.type))
-    #     else:
-    #         self.queueWaitTime += trucksDict[queueList[truckIndex - 1]].queueWaitTime + min(list(hydraulic.serviceTime for hydraulic in hydraulicsList if hydraulic.grainType == self.type))
-
-            
+        if self.status == STATUS_AVAILABLE:
+            queueList.append(truckDictKey)
+            self.pos = self.getQueueSize(queueList)
+            self.status = STATUS_ONQUEUE
+        #else:
+        #    raise ValueError("Truck not available for queueing")
+ 

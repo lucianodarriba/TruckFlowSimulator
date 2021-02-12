@@ -1,12 +1,25 @@
-#Final step: create the genetic algorithm
-
 import numpy as np, random, operator, pandas as pd, matplotlib.pyplot as plt
 from simulation import sim
-#Create class to handle "cities"
+
+class fixedQueuesClass():
+    from simulation import Simulation, sim
+    def __init__(self, size):
+        self.fixedMaxSize = size
+        self.fixedQueueList = []
+        self.fixedTrucksDict = {}
+
+    def createFixedTrucksDict(self, N):
+        return sim.generateTrucksDict(N)
+
+    def createFixedQueue(self, trucksDict, N):
+        if len(trucksDict) <= N:
+            return sim.generate_queueList(trucksDict, N)
+        else:
+            raise ValueError("Queue size cannot be larger that trucks waiting.")
+
 
 
 #Create a fitness function
-
 class Fitness:
     def __init__(self):
         self.fitness= 0.0
@@ -19,32 +32,29 @@ class Fitness:
         sim.restartSimulation()
 
         for p in pop:
-            individual = copy.deepcopy(p)
+            #The individual is comprised of a fixed queue and the last tail which
+            #are the trucks to be called.
+            individual = copy.deepcopy(sim.fixedQueue + p)
+            # print(f"--------- {len(individual)} {pop.index(p)}")
+            # print(individual)
+            
+            # for key, value in sim.trucksDict.items():
+            #     print(key)
+            # exit()
             sim.runSimulation(individual)
-            self.queuesTimesList.append(1 / sim.globalTime)
+            # print("------------ Termino")
+            self.queuesTimesList.append(1.0 / sim.globalTime)
+            
             sim.restartSimulation()
+        
+        # print("************")
+        # print(list(sim.fixedQueue))
+        # print(list(sim.trucksDict[j].id for j in sim.fixedQueue))
 
+        # exit()
 
-    # def queueWaitTime(self, individual):
-    #     #To compute the total waiting time of all the trucks, I should run the Simulation.
-    #     #The result is stored in Simulation.globalTime
-    #     import copy
-      
-    #     sim.restartSimulation()
-    #     individualCopy = copy.deepcopy(individual)
-
-    #     sim.runSimulation(individualCopy)
-
-    #     return sim.globalTime
-    
-    # def timeFitness(self, individual):
-    #     if self.fitness == 0:
-    #         self.fitness = 1 / float(self.queueWaitTime(individual))
-    #     return self.fitness
-
-        #Create our initial population
-#Route generator
-#This method randomizes the order of the cities, this mean that this method creates a random individual.
+#Create our initial population
+#This method generates a random sample from the trucks list
 def createTruckQueue(queueList):
     from classes import TruckClass
     import random
@@ -52,8 +62,7 @@ def createTruckQueue(queueList):
     queue = random.sample(queueList, len(queueList))
     return queue
 
-
-#Create first "population" (list of routes)
+#Create first "population" (list of truck queues)
 #This method created a random population of the specified size.
 
 def initialPopulation(popSize, popList):
@@ -62,7 +71,6 @@ def initialPopulation(popSize, popList):
     for i in range(0, popSize):
         population.append(createTruckQueue(popList))
     return population
-
 
 #Create the genetic algorithm
 #Rank individuals
@@ -76,9 +84,7 @@ def rankIndividuals(population):
     sorted_results=sorted(fitnessResults.items(), key = operator.itemgetter(1), reverse = True)
     return sorted_results
 
-
-
-#Create a selection function that will be used to make the list of parent routes
+#Create a selection function that will be used to make the list of parent queues
 
 def selection(popRanked, eliteSize):
     selectionResults = []
@@ -90,13 +96,11 @@ def selection(popRanked, eliteSize):
         selectionResults.append(popRanked[i][0])
     for i in range(0, len(popRanked) - eliteSize):
         pick = 100*random.random()
-        for i in range(0, len(popRanked)):
-            if pick <= df.iat[i,3]:
+        for j in range(0, len(popRanked)):
+            if pick <= df.iat[j,3]:
                 selectionResults.append(popRanked[i][0])
                 break
     return selectionResults
-
-
 
 #Create mating pool
 
@@ -106,9 +110,6 @@ def matingPool(population, selectionResults):
         index = selectionResults[i]
         matingpool.append(population[index])
     return matingpool
-
-
-
 
 #Create a crossover function for two parents to create one child
 def breed(parent1, parent2):
@@ -125,7 +126,6 @@ def breed(parent1, parent2):
     for i in range(startGene, endGene):
         childP1.append(parent1[i])
         
-
     childP2 = [item for item in parent2 if item not in childP1]
     #print(startGene, endGene)
 
@@ -154,23 +154,18 @@ def breedPopulation(matingpool, eliteSize):
         children.append(child)
     return children
 
-
-
-
-#Create function to mutate a single route
+#Create function to mutate a single individual
 def mutate(individual, mutationRate):
     for swapped in range(len(individual)):
         if(random.random() < mutationRate):
             swapWith = int(random.random() * len(individual))
             
-            city1 = individual[swapped]
-            city2 = individual[swapWith]
+            truck1 = individual[swapped]
+            truck2 = individual[swapWith]
             
-            individual[swapped] = city2
-            individual[swapWith] = city1
+            individual[swapped] = truck2
+            individual[swapWith] = truck1
     return individual
-
-
 
 #Create function to run mutation over entire population
 
@@ -181,8 +176,6 @@ def mutatePopulation(population, mutationRate):
         mutatedInd = mutate(population[ind], mutationRate)
         mutatedPop.append(mutatedInd)
     return mutatedPop
-
-
 
 #Put all steps together to create the next generation
 
@@ -195,7 +188,8 @@ def nextGeneration(currentGen, eliteSize, mutationRate):
     return nextGeneration
 
 
-    #Final step: create the genetic algorithm
+#----------------------------------------------------------
+#Final step: create the genetic algorithm
 
 def geneticAlgorithm(population, popSize, eliteSize, mutationRate, generations):
 
@@ -203,8 +197,7 @@ def geneticAlgorithm(population, popSize, eliteSize, mutationRate, generations):
     fit.simulateAllPopulation(pop)
     progress = [1 / rankIndividuals(pop)[0][1]]
         
-    for i in range(1, generations+1):
-        #Reinitialize the truck flow simulation
+    for i in range(1, generations+1):        #Reinitialize the truck flow simulation
         fit.simulateAllPopulation(pop)
         pop = nextGeneration(pop, eliteSize, mutationRate)
         progress.append(1 / rankIndividuals(pop)[0][1])
@@ -213,7 +206,8 @@ def geneticAlgorithm(population, popSize, eliteSize, mutationRate, generations):
         
         
     bestTimeIndex = rankIndividuals(pop)[0][0]
-    bestTime = pop[bestTimeIndex]
+    bestTimeValue = rankIndividuals(pop)[0][1]
+    bestTimeQueue = pop[bestTimeIndex]
     
     plt.plot(progress)
     plt.ylabel('Time')
@@ -221,8 +215,7 @@ def geneticAlgorithm(population, popSize, eliteSize, mutationRate, generations):
     plt.title('Best Fitness vs Generation')
     plt.tight_layout()
     plt.show()
+       
+    return bestTimeQueue, bestTimeValue
 
-    
-    
-    return bestTime
 fit = Fitness()
